@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedRoute Emergency Allocation MVP</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">MR</div>
+        <div>
+          <strong>MedRoute</strong>
+          <span>Emergency Allocation</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <a href="#dispatch" class="nav-item is-active">Dispatch Flow</a>
+        <a href="#intake" class="nav-item">Ambulance Intake</a>
+        <a href="#command" class="nav-item">Hospital Command</a>
+        <a href="#resources" class="nav-item">Resources</a>
+        <a href="#impact" class="nav-item">Impact Metrics</a>
+      </nav>
+      <div class="emergency-card">
+        <span>Emergency Line</span>
+        <strong>108 / 911</strong>
+        <small>Demo network online</small>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Google Solution Challenge MVP</p>
+          <h1>Smart emergency healthcare routing</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="status-dot">Live demo</span>
+          <button id="simulateCaseBtn" class="icon-button" type="button" aria-label="Simulate next case">Simulate
+            Case</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero-strip" id="dispatch">
+          <div class="hero-copy">
+            <p class="eyebrow">Faster decisions. Faster care.</p>
+            <h2>Route the patient to the right hospital before the ambulance arrives.</h2>
+            <p>
+              This MVP connects ambulance intake, an AI-style recommendation engine, and a hospital command dashboard in
+              one real-time demo flow.
+            </p>
+          </div>
+          <div class="route-visual" aria-label="Emergency route visualization">
+            <img src="hero.jpg" alt="Emergency route visualization"
+              style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>
+        </section>
+
+        <section class="metrics-row" aria-label="Emergency operation metrics">
+          <article class="metric-card">
+            <span>Avg decision time</span>
+            <strong id="decisionTime">42 sec</strong>
+            <small>Target under 60 sec</small>
+          </article>
+          <article class="metric-card">
+            <span>Active ambulances</span>
+            <strong>7</strong>
+            <small>3 currently en route</small>
+          </article>
+          <article class="metric-card">
+            <span>Ready hospitals</span>
+            <strong id="readyHospitals">4</strong>
+            <small>Capacity refreshed live</small>
+          </article>
+          <article class="metric-card alert">
+            <span>Critical cases</span>
+            <strong id="criticalCount">1</strong>
+            <small>Immediate attention</small>
+          </article>
+        </section>
+
+        <section class="split-section" id="intake">
+          <div class="panel intake-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Ambulance app</p>
+                <h2>Tap-based patient intake</h2>
+              </div>
+              <span class="panel-chip">Offline sync ready</span>
+            </div>
+
+            <form id="caseForm" class="case-form">
+              <div class="form-grid">
+                <label>
+                  Patient age
+                  <input id="ageInput" type="number" min="1" max="110" value="62" />
+                </label>
+                <label>
+                  Sex
+                  <select id="sexInput">
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label class="span-2">
+                  Emergency type
+                  <select id="conditionInput">
+                    <option value="cardiac">Chest pain / cardiac arrest</option>
+                    <option value="trauma">Road accident / trauma</option>
+                    <option value="stroke">Stroke symptoms</option>
+                    <option value="respiratory">Respiratory distress</option>
+                  </select>
+                </label>
+                <label>
+                  Heart rate
+                  <input id="heartRateInput" type="number" min="35" max="220" value="145" />
+                </label>
+                <label>
+                  SpO2
+                  <input id="spo2Input" type="number" min="40" max="100" value="88" />
+                </label>
+                <label>
+                  BP systolic
+                  <input id="bpInput" type="number" min="50" max="250" value="80" />
+                </label>
+                <label>
+                  Ambulance location
+                  <select id="locationInput">
+                    <option value="central">Central market junction</option>
+                    <option value="highway">NH-48 highway exit</option>
+                    <option value="campus">University medical gate</option>
+                    <option value="industrial">Industrial zone block C</option>
+                  </select>
+                </label>
+              </div>
+
+              <fieldset class="severity-group" aria-label="Observed severity">
+                <legend>Observed severity</legend>
+                <label><input type="radio" name="severity" value="moderate" /> Moderate</label>
+                <label><input type="radio" name="severity" value="urgent" /> Urgent</label>
+                <label><input type="radio" name="severity" value="critical" checked /> Critical</label>
+              </fieldset>
+
+              <label>
+                Paramedic notes
+                <textarea id="notesInput"
+                  rows="4">Sudden chest pain, sweating, dizziness. Suspected STEMI. Needs cath lab and ICU prep.</textarea>
+              </label>
+
+              <div class="form-actions">
+                <button id="dispatchBtn" class="primary-button" type="submit">Dispatch to recommended hospital</button>
+                <button id="clearBtn" class="ghost-button" type="button">Clear form</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel recommendation-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Recommendation engine</p>
+                <h2>Best hospital match</h2>
+              </div>
+              <span id="severityBadge" class="severity-badge critical">Critical</span>
+            </div>
+
+            <div id="recommendationSummary" class="recommendation-summary"></div>
+            <div class="score-breakdown" aria-label="Recommendation scoring">
+              <div>
+                <span>Distance</span>
+                <meter id="distanceMeter" min="0" max="100" value="80"></meter>
+              </div>
+              <div>
+                <span>Specialty fit</span>
+                <meter id="specialtyMeter" min="0" max="100" value="90"></meter>
+              </div>
+              <div>
+                <span>Capacity</span>
+                <meter id="capacityMeter" min="0" max="100" value="70"></meter>
+              </div>
+            </div>
+            <div id="hospitalList" class="hospital-list"></div>
+          </div>
+        </section>
+
+        <section class="command-grid" id="command">
+          <div class="panel queue-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Hospital command center</p>
+                <h2>Incoming case queue</h2>
+              </div>
+              <span id="queueCount" class="panel-chip">1 active case</span>
+            </div>
+            <div id="caseQueue" class="case-queue"></div>
+          </div>
+
+          <div class="panel status-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Pre-arrival readiness</p>
+                <h2>Resource checklist</h2>
+              </div>
+              <span id="readinessScore" class="panel-chip">50% ready</span>
+            </div>
+            <div id="readinessList" class="readiness-list"></div>
+            <div class="case-actions">
+              <button id="acceptBtn" class="primary-button" type="button">Accept and prepare</button>
+              <button id="redirectBtn" class="danger-button" type="button">Redirect safely</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="resource-section" id="resources">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Hospital availability</p>
+              <h2>Live capacity and resource management</h2>
+            </div>
+            <button id="refreshBtn" class="ghost-button" type="button">Refresh capacity</button>
+          </div>
+          <div id="resourceCards" class="resource-cards"></div>
+        </section>
+
+        <section class="impact-section" id="impact">
+          <div class="impact-copy">
+            <p class="eyebrow">SDG 3: Good Health and Well-being</p>
+            <h2>Saving minutes means saving lives.</h2>
+            <p>
+              The MVP demonstrates the core loop judges need to see: capture patient details, rank hospitals, alert the
+              care team, and prepare resources before arrival.
+            </p>
+          </div>
+          <div class="impact-bars" aria-label="Projected impact metrics">
+            <div>
+              <span>Response lag reduction</span>
+              <strong>32%</strong>
+              <div class="bar"><i style="width: 72%"></i></div>
+            </div>
+            <div>
+              <span>Hospital readiness</span>
+              <strong>89%</strong>
+              <div class="bar"><i style="width: 89%"></i></div>
+            </div>
+            <div>
+              <span>Routing confidence</span>
+              <strong>94%</strong>
+              <div class="bar"><i style="width: 94%"></i></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
