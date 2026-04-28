@@ -1,6 +1,6 @@
 # MedRoute 🏥
 
-![Dashboard Preview](assets/dashboard_preview.png)
+![Dashboard Preview](https://github.com/Namangoel1904/MedRoute/blob/main/dashboard_preview.png)
 
 ## 📖 Overview
 
