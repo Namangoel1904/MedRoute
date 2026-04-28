@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedRoute | Emergency Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        dark: '#0f172a',
+                        critical: '#ef4444',
+                        urgent: '#f97316',
+                        moderate: '#3b82f6',
+                        standby: '#f59e0b',
+                        ready: '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .sidebar-link {
+            transition: all 0.2s;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background-color: #1e3a8a;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Toast Notification Styles */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background-color: #0f172a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .bed-unit {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bed-unit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-slate-800 h-screen overflow-hidden flex">
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="w-full h-full flex items-center justify-center bg-slate-900 relative">
+        <div
+            class="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider animate-pulse">
+            LIVE ENVIRONMENT</div>
+
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 bg-primary rounded-xl mx-auto mb-4 flex items-center justify-center"><i
+                        class="fas fa-hospital text-white text-2xl"></i></div>
+                <h1 class="text-2xl font-bold text-slate-800">MedRoute</h1>
+                <p class="text-slate-500 text-sm mt-1">Hospital Administrator Portal</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email or Username</label>
+                    <input type="text"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="admin@hospital.org">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="••••••••">
+                </div>
+                <button onclick="login()"
+                    class="w-full bg-primary hover:bg-blue-900 text-white font-semibold py-2 rounded-md transition">Sign
+                    In</button>
+            </div>
+
+            <div class="my-6 flex items-center justify-between">
+                <div class="border-t border-gray-300 w-full"></div>
+                <span class="px-3 text-gray-500 text-xs uppercase">Or Continue With</span>
+                <div class="border-t border-gray-300 w-full"></div>
+            </div>
+
+            <button onclick="login()"
+                class="w-full border-2 border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-2 rounded-md transition flex items-center justify-center gap-2">
+                <i class="fas fa-shield-halved text-primary"></i> Hospital Single Sign-On
+            </button>
+
+            <div class="mt-8 bg-slate-50 border border-slate-200 rounded-md p-3 text-xs text-slate-600">
+                <p class="font-bold text-slate-700 mb-1"><i class="fas fa-lock mr-1"></i> Security Notice</p>
+                <p>This system handles sensitive patient data. All access attempts are logged and monitored.
+                    Unauthorized access is strictly prohibited.</p>
+            </div>
+
+            <div class="mt-4 flex justify-between text-xs text-primary font-medium">
+                <a href="#" class="hover:underline">IT Support</a>
+                <a href="#" class="hover:underline">Help Guide</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP VIEW -->
+    <div id="app-view" class="w-full h-full hidden">
+        <div class="flex h-full">
+
+            <!-- SIDEBAR -->
+            <nav class="w-64 bg-dark text-white flex flex-col flex-shrink-0">
+                <div class="p-4 border-b border-slate-700">
+                    <h1 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-hospital text-secondary"></i>
+                        MedRoute</h1>
+                    <p class="text-xs text-slate-400 mt-1">St. Mary's Regional</p>
+                </div>
+                <div class="flex-1 py-4 space-y-1 overflow-y-auto">
+                    <a href="#" onclick="switchView(event, 'view-dashboard')" data-view="view-dashboard"
+                        class="sidebar-link active flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Dashboard Overview</a>
+                    <a href="#" onclick="switchView(event, 'view-cases')" data-view="view-cases"
+                        class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Incoming Cases</a>
+                    <a href="#" onclick="switchView(event, 'view-resources')" data-view="view-resources"
+                        class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Resource Management</a>
+                    <a href="#" onclick="switchView(event, 'view-staff')" data-view="view-staff"
+                        class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Staff & Coverage</a>
+                    <a href="#" onclick="switchView(event, 'view-alerts')" data-view="view-alerts"
+                        class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Alerts & Triage</a>
+                    <a href="#" onclick="switchView(event, 'view-analytics')" data-view="view-analytics"
+                        class="sidebar-link flex items-center px-4 py-2.5 text-sm font-medium"><i
+                            class="w-6 mr-3 text-center"></i>Analytics & Reports</a>
+                </div>
+                <div class="p-4 border-t border-slate-700 text-xs text-slate-400">
+                    Logged in as Admin<br><a href="#" onclick="logout()" class="text-red-400 hover:underline">Sign
+                        Out</a>
+                </div>
+            </nav>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="flex-1 overflow-y-auto p-8 bg-slate-50">
+
+                <!-- DASHBOARD OVERVIEW -->
+                <section id="view-dashboard" class="view-section active">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Command Center</h2>
+                            <p class="text-sm text-slate-500">Real-time hospital overview</p>
+                        </div>
+                        <div
+                            class="bg-red-100 text-critical px-4 py-2 rounded-md font-semibold text-sm flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i> 3 Critical Alerts Require Immediate Attention
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-5 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Available Beds</p>
+                            <p class="text-2xl font-bold mt-1">24 <span class="text-sm text-slate-400 font-normal">/
+                                    120</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">ICU Capacity</p>
+                            <p class="text-2xl font-bold mt-1 text-critical">3 <span
+                                    class="text-sm text-slate-400 font-normal">/ 20</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">ED Capacity</p>
+                            <p class="text-2xl font-bold mt-1 text-urgent">68%</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Ventilators</p>
+                            <p class="text-2xl font-bold mt-1">7 <span class="text-sm text-slate-400 font-normal">/
+                                    15</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Staff On-Shift</p>
+                            <p class="text-2xl font-bold mt-1 text-ready">42</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 mb-6">
+                        <div class="col-span-2 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 mb-4">Incoming Cases</h3>
+                            <div class="space-y-3">
+                                <div
+                                    class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-md">
+                                    <div class="flex items-center gap-3">
+                                        <span
+                                            class="px-2 py-1 text-xs font-bold bg-critical text-white rounded">CRITICAL</span>
+                                        <span class="font-semibold">Cardiac Arrest</span>
+                                    </div>
+                                    <button onclick="switchView(event, 'view-case-detail')"
+                                        class="text-sm text-primary font-medium hover:underline">View</button>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-md">
+                                    <div class="flex items-center gap-3">
+                                        <span
+                                            class="px-2 py-1 text-xs font-bold bg-urgent text-white rounded">URGENT</span>
+                                        <span class="font-semibold">Trauma - MVA</span>
+                                    </div>
+                                    <button class="text-sm text-primary font-medium hover:underline">View</button>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                    <div class="flex items-center gap-3">
+                                        <span
+                                            class="px-2 py-1 text-xs font-bold bg-moderate text-white rounded">MODERATE</span>
+                                        <span class="font-semibold">Respiratory Distress</span>
+                                    </div>
+                                    <button class="text-sm text-primary font-medium hover:underline">View</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 mb-4">Next Case</h3>
+                            <div class="text-center p-4 bg-red-50 rounded-md border border-red-100">
+                                <i class="fas fa-heart-pulse text-critical text-3xl mb-2"></i>
+                                <h4 class="font-bold text-lg text-slate-900">Cardiac Arrest</h4>
+                                <p class="text-sm text-slate-600 mt-1">ETA: 4 minutes</p>
+                                <button onclick="switchView(event, 'view-case-detail')"
+                                    class="mt-4 bg-critical hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-semibold transition">Handle
+                                    Case</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-64">
+                        <h3 class="font-bold text-slate-800 mb-2">LIVE MAP</h3>
+                        <div
+                            class="h-full bg-slate-100 rounded flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
+                            [ Live Ambulance & Hospital Mapping Integration ]
+                        </div>
+                    </div>
+                </section>
+
+                <!-- INCOMING CASES QUEUE -->
+                <section id="view-cases" class="view-section">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Incoming Cases Queue <span
+                            class="text-sm font-normal text-slate-500 ml-2">Sorted by Priority</span></h2>
+
+                    <div class="space-y-4">
+                        <!-- Case 1 -->
+                        <div
+                            class="bg-white border-l-4 border-critical rounded-lg shadow-sm p-5 flex justify-between items-center">
+                            <div class="flex items-center gap-6">
+                                <div class="text-center">
+                                    <p class="text-xs text-slate-500 uppercase">Level</p>
+                                    <p class="text-2xl font-bold text-critical">1</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">Cardiac Arrest - Suspected STEMI</h3>
+                                    <p class="text-sm text-slate-600 mt-1"><i class="far fa-clock mr-1"></i> ETA: 4m |
+                                        62/M | Ambulance A-142</p>
+                                    <p class="text-sm text-slate-500 mt-1"><i class="fas fa-bed mr-1"></i> Needs: ICU
+                                        Bed, Cath Lab</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="switchView(event, 'view-case-detail')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">View
+                                    Details</button>
+                                <button onclick="switchView(event, 'view-allocation')"
+                                    class="bg-ready hover:bg-emerald-600 text-white px-3 py-2 rounded text-sm font-medium transition">Pre-Accept</button>
+                                <button onclick="showToast('Info requested from Paramedic James Rodriguez.')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">Request
+                                    Info</button>
+                            </div>
+                        </div>
+
+                        <!-- Case 2 -->
+                        <div
+                            class="bg-white border-l-4 border-urgent rounded-lg shadow-sm p-5 flex justify-between items-center">
+                            <div class="flex items-center gap-6">
+                                <div class="text-center">
+                                    <p class="text-xs text-slate-500 uppercase">Level</p>
+                                    <p class="text-2xl font-bold text-urgent">2</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">Trauma - MVA</h3>
+                                    <p class="text-sm text-slate-600 mt-1"><i class="far fa-clock mr-1"></i> ETA: 7m |
+                                        34/F | Ambulance A-089</p>
+                                    <p class="text-sm text-slate-500 mt-1"><i class="fas fa-bed mr-1"></i> Needs: Trauma
+                                        Bay, Blood Bank</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="switchView(event, 'view-case-detail')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">View
+                                    Details</button>
+                                <button onclick="switchView(event, 'view-allocation')"
+                                    class="bg-ready hover:bg-emerald-600 text-white px-3 py-2 rounded text-sm font-medium transition">Pre-Accept</button>
+                                <button onclick="showToast('Info requested from Paramedic Sarah Connor.')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">Request
+                                    Info</button>
+                            </div>
+                        </div>
+
+                        <!-- Case 3 -->
+                        <div
+                            class="bg-white border-l-4 border-moderate rounded-lg shadow-sm p-5 flex justify-between items-center">
+                            <div class="flex items-center gap-6">
+                                <div class="text-center">
+                                    <p class="text-xs text-slate-500 uppercase">Level</p>
+                                    <p class="text-2xl font-bold text-moderate">3</p>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">Respiratory Distress</h3>
+                                    <p class="text-sm text-slate-600 mt-1"><i class="far fa-clock mr-1"></i> ETA: 12m |
+                                        45/M | Ambulance A-201</p>
+                                    <p class="text-sm text-slate-500 mt-1"><i class="fas fa-bed mr-1"></i> Needs: ED
+                                        Bed, Acute Asthma Exacerbation</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="switchView(event, 'view-case-detail')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">View
+                                    Details</button>
+                                <button onclick="switchView(event, 'view-allocation')"
+                                    class="bg-ready hover:bg-emerald-600 text-white px-3 py-2 rounded text-sm font-medium transition">Pre-Accept</button>
+                                <button onclick="showToast('Info requested from Paramedic Mike Lowrey.')"
+                                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded text-sm font-medium transition">Request
+                                    Info</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CASE DETAIL -->
+                <section id="view-case-detail" class="view-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <button onclick="switchView(event, 'view-cases')"
+                                class="text-sm text-primary font-medium mb-2 inline-block hover:underline"><i
+                                    class="fas fa-arrow-left mr-1"></i> Back to Queue</button>
+                            <h2 class="text-2xl font-bold text-slate-800">Cardiac Arrest - STEMI</h2>
+                            <p class="text-sm text-slate-500">Case: EC-2025-0142 | Paramedic: James Rodriguez</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span
+                                class="bg-red-100 text-critical px-4 py-2 rounded-md font-bold text-sm flex items-center gap-2 animate-pulse"><i
+                                    class="fas fa-circle"></i> CRITICAL | ETA 4m</span>
+                            <button onclick="switchView(event, 'view-allocation')"
+                                class="bg-primary text-white px-4 py-2 rounded font-semibold text-sm hover:bg-blue-900 transition">Proceed
+                                to Allocation</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="col-span-2 space-y-6">
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Patient Information</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Age/Sex</p>
+                                        <p class="font-semibold">62 / Male</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Chief Complaint</p>
+                                        <p class="font-semibold">Chest Pain, Shortness of Breath</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Current Vitals</h3>
+                                <div class="grid grid-cols-4 gap-4 text-center">
+                                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                                        <p class="text-xs text-slate-500">BP</p>
+                                        <p class="text-xl font-bold text-critical">80/50</p>
+                                        <p class="text-xs text-slate-400">mmHg</p>
+                                    </div>
+                                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                                        <p class="text-xs text-slate-500">HR</p>
+                                        <p class="text-xl font-bold text-critical">145</p>
+                                        <p class="text-xs text-slate-400">bpm</p>
+                                    </div>
+                                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                                        <p class="text-xs text-slate-500">SpO2</p>
+                                        <p class="text-xl font-bold text-critical">88%</p>
+                                        <p class="text-xs text-slate-400">%</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <p class="text-xs text-slate-500">Temp</p>
+                                        <p class="text-xl font-bold">98.2</p>
+                                        <p class="text-xs text-slate-400">°F</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">History & Meds</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs font-semibold text-critical uppercase mb-2">Allergies</p>
+                                        <p class="bg-red-50 text-sm text-red-700 px-2 py-1 rounded inline-block">
+                                            Penicillin</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Medical History
+                                        </p>
+                                        <p class="text-sm text-slate-700">Hypertension, Type 2 Diabetes, Hyperlipidemia
+                                        </p>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Current
+                                            Medications</p>
+                                        <p class="text-sm text-slate-700">Metoprolol, Lisinopril, Metformin, Aspirin</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-5 rounded-lg shadow-sm border border-blue-200">
+                                <h3 class="font-bold text-primary mb-4"><i class="fas fa-location-dot mr-2"></i>
+                                    Recommended Destination</h3>
+                                <div class="bg-white p-4 rounded-md border border-blue-100 text-center">
+                                    <i class="fas fa-heart-circle-bolt text-primary text-3xl mb-2"></i>
+                                    <p class="font-bold text-lg text-slate-800">Cardiac Catheterization Lab</p>
+                                    <p class="text-sm text-slate-500 mt-1">Priority: Immediate</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Quick Actions</h3>
+                                <div class="space-y-2">
+                                    <button onclick="switchView(event, 'view-allocation')"
+                                        class="w-full bg-ready hover:bg-emerald-600 text-white px-4 py-2.5 rounded font-semibold text-sm transition">Accept
+                                        & Allocate Resources</button>
+                                    <button onclick="switchView(event, 'view-decline')"
+                                        class="w-full bg-white border border-red-300 hover:bg-red-50 text-critical px-4 py-2.5 rounded font-semibold text-sm transition">Decline
+                                        & Redirect</button>
+                                    <button onclick="showToast('Message sent to Paramedic James Rodriguez.')"
+                                        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded font-semibold text-sm transition">Message
+                                        Paramedic</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RESOURCE ALLOCATION -->
+                <section id="view-allocation" class="view-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <button onclick="switchView(event, 'view-case-detail')"
+                                class="text-sm text-primary font-medium mb-2 inline-block hover:underline"><i
+                                    class="fas fa-arrow-left mr-1"></i> Back to Case</button>
+                            <h2 class="text-2xl font-bold text-slate-800">Resource Allocation</h2>
+                            <p class="text-sm text-slate-500">Case: EC-2025-0142 | Cardiac Arrest - STEMI | <span
+                                    class="text-critical font-semibold">CRITICAL</span></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="showToast('Allocation Confirmed! ICU Bed 12-A and Cath Lab reserved.')"
+                                class="bg-ready text-white px-4 py-2 rounded font-semibold text-sm hover:bg-emerald-600 transition"><i
+                                    class="fas fa-check mr-2"></i> Confirm Allocation</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="col-span-2 space-y-6">
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Destination Unit</h3>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div
+                                        class="border-2 border-blue-500 bg-blue-50 p-4 rounded-lg text-center cursor-pointer">
+                                        <p class="font-bold text-primary">Cath Lab</p>
+                                        <span
+                                            class="text-xs px-2 py-0.5 bg-standby text-white rounded-full mt-2 inline-block">STANDBY</span>
+                                    </div>
+                                    <div
+                                        class="border border-gray-200 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50">
+                                        <p class="font-bold">ICU</p>
+                                        <span
+                                            class="text-xs px-2 py-0.5 bg-ready text-white rounded-full mt-2 inline-block">READY</span>
+                                    </div>
+                                    <div
+                                        class="border border-gray-200 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50">
+                                        <p class="font-bold">Emergency</p>
+                                        <span
+                                            class="text-xs px-2 py-0.5 bg-ready text-white rounded-full mt-2 inline-block">READY</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Bed Allocation</h3>
+                                <div
+                                    class="bg-blue-50 border border-blue-200 p-4 rounded-md flex justify-between items-center mb-3">
+                                    <div>
+                                        <p class="font-bold text-primary">ICU Bed 12-A</p>
+                                        <p class="text-xs text-slate-500">Cardiac Wing, Floor 3</p>
+                                    </div>
+                                    <span
+                                        class="text-xs px-2 py-1 bg-primary text-white rounded font-bold">RECOMMENDED</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-2 font-semibold uppercase">Alternative Options</p>
+                                <div class="flex gap-3">
+                                    <div class="border border-gray-200 p-3 rounded text-sm text-slate-600 flex-1">ICU
+                                        Bed 8-B (Floor 3)</div>
+                                    <div class="border border-gray-200 p-3 rounded text-sm text-slate-600 flex-1">ICU
+                                        Bed 2-C (Floor 2)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Resource Availability</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center"><span
+                                            class="text-sm text-slate-700">ICU Bed</span> <span
+                                            class="text-xs px-2 py-0.5 bg-ready text-white rounded-full">READY</span>
+                                    </div>
+                                    <div class="flex justify-between items-center"><span
+                                            class="text-sm text-slate-700">Medical Equipment</span> <span
+                                            class="text-xs px-2 py-0.5 bg-ready text-white rounded-full">READY</span>
+                                    </div>
+                                    <div class="flex justify-between items-center"><span
+                                            class="text-sm text-slate-700">Staff Assigned</span> <span
+                                            class="text-xs px-2 py-0.5 bg-primary text-white rounded-full">ASSIGNED</span>
+                                    </div>
+                                    <div class="flex justify-between items-center"><span
+                                            class="text-sm text-slate-700">Cath Lab Prep</span> <span
+                                            class="text-xs px-2 py-0.5 bg-standby text-white rounded-full">STANDBY</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-5 rounded-lg shadow-sm border border-green-200">
+                                <div class="flex items-center gap-2 text-ready">
+                                    <i class="fas fa-check-circle text-xl"></i>
+                                    <h3 class="font-bold text-green-800">No Conflicts Detected</h3>
+                                </div>
+                                <p class="text-sm text-green-700 mt-2">All required resources are available and assigned
+                                    staff has no overlapping duties.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DECLINE & REDIRECT -->
+                <section id="view-decline" class="view-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <button onclick="switchView(event, 'view-case-detail')"
+                                class="text-sm text-primary font-medium mb-2 inline-block hover:underline"><i
+                                    class="fas fa-arrow-left mr-1"></i> Back to Case</button>
+                            <h2 class="text-2xl font-bold text-slate-800">Decline & Redirect</h2>
+                            <p class="text-sm text-slate-500">Case: EC-2025-0142 | Cardiac Arrest - STEMI</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="col-span-2 space-y-6">
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Reason for Decline</h3>
+                                <div class="space-y-2">
+                                    <label
+                                        class="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="decline" class="mr-3 text-critical"> No ICU Beds
+                                        Available
+                                    </label>
+                                    <label
+                                        class="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="decline" class="mr-3"> Diversion Status Active
+                                    </label>
+                                    <label
+                                        class="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="decline" class="mr-3"> Specialized Unit Unavailable
+                                    </label>
+                                    <label
+                                        class="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="decline" class="mr-3"> Staffing Limitations
+                                    </label>
+                                    <label
+                                        class="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                        <input type="radio" name="decline" class="mr-3"> Equipment Malfunction
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-red-50 p-5 rounded-lg shadow-sm border border-red-200">
+                                <h3 class="font-bold text-critical mb-2"><i
+                                        class="fas fa-exclamation-triangle mr-2"></i> Critical Reminder</h3>
+                                <p class="text-sm text-red-700">Declining a Level 1 case requires immediate notification
+                                    to the regional dispatch center. The ambulance will need rerouting instructions
+                                    immediately.</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Decline Status</h3>
+                                <div class="space-y-2 text-sm text-slate-600">
+                                    <p><span class="font-semibold">Case ID:</span> EC-2025-0142</p>
+                                    <p><span class="font-semibold">ETA:</span> 4 minutes</p>
+                                    <p><span class="font-semibold">Action Required:</span> Immediate Redirect</p>
+                                </div>
+                            </div>
+                            <button onclick="showToast('Decline sent. Rerouting Ambulance A-142 to nearest facility.')"
+                                class="w-full bg-critical hover:bg-red-700 text-white px-4 py-3 rounded font-bold text-sm transition flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane"></i> Send to Ambulance
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RESOURCE MANAGEMENT -->
+                <section id="view-resources" class="view-section">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Resource Management</h2>
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Total Beds</p>
+                            <p class="text-3xl font-bold text-slate-800 mt-1">248</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Available</p>
+                            <p class="text-3xl font-bold text-ready mt-1">42</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Occupancy Rate</p>
+                            <p class="text-3xl font-bold text-urgent mt-1">83%</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-center">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Overflow Status</p>
+                            <p class="text-3xl font-bold text-critical mt-1">Active</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-end mb-2">
+                                <h4 class="font-bold text-slate-800">ICU</h4>
+                                <span class="text-sm text-slate-500">8 / 24</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-critical h-2 rounded-full" style="width: 67%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-end mb-2">
+                                <h4 class="font-bold text-slate-800">Emergency</h4>
+                                <span class="text-sm text-slate-500">12 / 36</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-urgent h-2 rounded-full" style="width: 67%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-end mb-2">
+                                <h4 class="font-bold text-slate-800">Surgery</h4>
+                                <span class="text-sm text-slate-500">6 / 48</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-moderate h-2 rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">ICU Bed Status Grid <span
+                                    class="text-xs font-normal text-slate-500">(Click to toggle state)</span></h3>
+                            <div class="grid grid-cols-6 gap-2">
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-slate-500">
+                                    1-A</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-red-200 rounded flex items-center justify-center text-xs font-bold text-red-700">
+                                    1-B</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-slate-500">
+                                    1-C</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-red-200 rounded flex items-center justify-center text-xs font-bold text-red-700">
+                                    1-D</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-green-200 rounded flex items-center justify-center text-xs font-bold text-green-700">
+                                    2-A</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-slate-500">
+                                    2-B</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-green-200 rounded flex items-center justify-center text-xs font-bold text-green-700">
+                                    2-C</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-gray-200 rounded flex items-center justify-center text-xs font-bold text-slate-500">
+                                    2-D</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-red-200 rounded flex items-center justify-center text-xs font-bold text-red-700">
+                                    3-A</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-red-200 rounded flex items-center justify-center text-xs font-bold text-red-700">
+                                    3-B</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-red-200 rounded flex items-center justify-center text-xs font-bold text-red-700">
+                                    3-C</div>
+                                <div onclick="toggleBed(this)"
+                                    class="bed-unit h-10 bg-green-200 rounded flex items-center justify-center text-xs font-bold text-green-700">
+                                    3-D</div>
+                            </div>
+                            <div class="flex gap-4 mt-4 text-xs text-slate-600">
+                                <div class="flex items-center gap-1">
+                                    <div class="w-3 h-3 bg-green-200 rounded"></div> Available
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-3 h-3 bg-red-200 rounded"></div> Occupied
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-3 h-3 bg-gray-200 rounded"></div> Cleanup
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Equipment Stats</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                                    <span class="text-sm font-medium text-slate-700">Ventilators</span>
+                                    <span class="text-sm font-bold text-slate-900">7 / 15 <span
+                                            class="text-xs font-normal text-slate-400">Available</span></span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                                    <span class="text-sm font-medium text-slate-700">Cardiac Monitors</span>
+                                    <span class="text-sm font-bold text-slate-900">12 / 40 <span
+                                            class="text-xs font-normal text-slate-400">Available</span></span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                                    <span class="text-sm font-medium text-slate-700">Defibrillators</span>
+                                    <span class="text-sm font-bold text-slate-900">4 / 8 <span
+                                            class="text-xs font-normal text-slate-400">Available</span></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-slate-700">IV Pumps</span>
+                                    <span class="text-sm font-bold text-slate-900">22 / 50 <span
+                                            class="text-xs font-normal text-slate-400">Available</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STAFF & COVERAGE -->
+                <section id="view-staff" class="view-section">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Staff & Coverage Planner</h2>
+
+                    <div class="space-y-4 mb-6">
+                        <div
+                            class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm font-medium">
+                            <i class="fas fa-exclamation-circle text-lg"></i> RN Ratio Below Minimum (1.4 required,
+                            currently 1.2)
+                        </div>
+                        <div
+                            class="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm font-medium">
+                            <i class="fas fa-user-clock text-lg"></i> RT Shortage - Emergency Department
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-6">
+                        <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Shift Timeline - Next 24 Hours</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-slate-500 uppercase border-b">
+                                    <tr>
+                                        <th class="pb-2 pr-4">Role</th>
+                                        <th class="pb-2 px-1">00-04</th>
+                                        <th class="pb-2 px-1">04-08</th>
+                                        <th class="pb-2 px-1">08-12</th>
+                                        <th class="pb-2 px-1">12-16</th>
+                                        <th class="pb-2 px-1">16-20</th>
+                                        <th class="pb-2 px-1">20-24</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-3 pr-4 font-medium text-slate-800">ICU - RN</td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 border-2 border-dashed border-red-400 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 border-2 border-dashed border-red-400 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-3 pr-4 font-medium text-slate-800">ER - RN</td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 border-2 border-dashed border-red-400 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 border-2 border-dashed border-red-400 rounded w-full"></div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 pr-4 font-medium text-slate-800">ER - MD</td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                        <td class="py-3 px-1">
+                                            <div class="h-6 bg-slate-800 rounded w-full"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex gap-4 mt-4 text-xs text-slate-600">
+                            <div class="flex items-center gap-1">
+                                <div class="w-6 h-3 bg-slate-800 rounded"></div> Scheduled
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-6 h-3 border-2 border-dashed border-red-400 rounded"></div> Coverage Gap
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">On-Call Roster</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center text-sm">
+                                    <div><span class="font-semibold text-slate-800">Dr. Sarah Jenkins</span> <span
+                                            class="text-slate-500 ml-2">Cardiology</span></div>
+                                    <span
+                                        class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Available</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <div><span class="font-semibold text-slate-800">Dr. Mike Ross</span> <span
+                                            class="text-slate-500 ml-2">Trauma Surg</span></div>
+                                    <span
+                                        class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">On-Call</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Quick Actions</h3>
+                            <div class="space-y-2">
+                                <button onclick="showToast('Float staff request sent to Nursing Supervisor.')"
+                                    class="w-full bg-primary hover:bg-blue-900 text-white px-4 py-2 rounded font-medium text-sm transition">Request
+                                    Float Staff</button>
+                                <button onclick="showToast('Mandatory overtime issued to ER RNs for shift 20-24.')"
+                                    class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded font-medium text-sm transition">Mandate
+                                    Overtime</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ALERTS & TRIAGE CENTER -->
+                <section id="view-alerts" class="view-section">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-6">Alerts & Triage Center</h2>
+
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-red-600 text-white p-4 rounded-lg shadow-sm">
+                            <p class="text-xs uppercase font-medium opacity-80">Critical</p>
+                            <p class="text-4xl font-bold mt-1">3</p>
+                        </div>
+                        <div class="bg-orange-500 text-white p-4 rounded-lg shadow-sm">
+                            <p class="text-xs uppercase font-medium opacity-80">High</p>
+                            <p class="text-4xl font-bold mt-1">7</p>
+                        </div>
+                        <div class="bg-blue-600 text-white p-4 rounded-lg shadow-sm">
+                            <p class="text-xs uppercase font-medium opacity-80">Medium</p>
+                            <p class="text-4xl font-bold mt-1">12</p>
+                        </div>
+                        <div class="bg-slate-500 text-white p-4 rounded-lg shadow-sm">
+                            <p class="text-xs uppercase font-medium opacity-80">Silenced</p>
+                            <p class="text-4xl font-bold mt-1">5</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="col-span-2 space-y-3" id="alerts-list">
+                            <!-- Alert 1 -->
+                            <div
+                                class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-critical flex justify-between items-center alert-card">
+                                <div class="alert-content">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span
+                                            class="text-xs px-2 py-0.5 bg-red-100 text-critical rounded font-bold">CRITICAL</span>
+                                        <span class="text-xs text-slate-500">2m ago</span>
+                                    </div>
+                                    <p class="font-semibold text-slate-800">ICU Capacity at 98% - Emergency Overflow
+                                        Protocol Required</p>
+                                </div>
+                                <div class="flex gap-1 alert-actions">
+                                    <button onclick="acknowledgeAlert(this)"
+                                        class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded font-medium">Acknowledge</button>
+                                    <button onclick="showToast('Alert assigned to you.')"
+                                        class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded font-medium">Assign
+                                        to Me</button>
+                                    <button onclick="showToast('Alert escalated to CMO.')"
+                                        class="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-medium">Escalate</button>
+                                </div>
+                            </div>
+                            <!-- Alert 2 -->
+                            <div
+                                class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-urgent flex justify-between items-center alert-card">
+                                <div class="alert-content">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span
+                                            class="text-xs px-2 py-0.5 bg-orange-100 text-urgent rounded font-bold">HIGH</span>
+                                        <span class="text-xs text-slate-500">15m ago</span>
+                                    </div>
+                                    <p class="font-semibold text-slate-800">Trauma Bay CT Scanner Offline for
+                                        Maintenance</p>
+                                </div>
+                                <div class="flex gap-1 alert-actions">
+                                    <button onclick="acknowledgeAlert(this)"
+                                        class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded font-medium">Acknowledge</button>
+                                    <button onclick="showToast('Alert assigned to you.')"
+                                        class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded font-medium">Assign
+                                        to Me</button>
+                                    <button onclick="showToast('Alert escalated to Dept Head.')"
+                                        class="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded font-medium">Escalate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Triage Rules</h3>
+                                <div class="text-sm space-y-2 text-slate-600">
+                                    <p>1. Level 1 cases auto-bypass queue.</p>
+                                    <p>2. ICU > 90% triggers Overflow Alert.</p>
+                                    <p>3. Cath Lab requires 15m prep time.</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 mb-4">Escalation Pathways</h3>
+                                <div class="text-sm space-y-2 text-slate-600">
+                                    <p><span class="font-semibold">Level 1:</span> Charge Nurse -> CMO</p>
+                                    <p><span class="font-semibold">Level 2:</span> Shift Supervisor</p>
+                                    <p><span class="font-semibold">Level 3:</span> Department Head</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ANALYTICS & REPORTS -->
+                <section id="view-analytics" class="view-section">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800">Analytics & Reports</h2>
+                        <button onclick="showToast('Report exported as PDF.')"
+                            class="bg-primary text-white px-4 py-2 rounded font-semibold text-sm hover:bg-blue-900 transition"><i
+                                class="fas fa-download mr-2"></i> Export Data</button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 flex gap-4">
+                        <select
+                            class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                            <option>Last 7 Days</option>
+                        </select>
+                        <select
+                            class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                            <option>All Units</option>
+                        </select>
+                        <select
+                            class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                            <option>All Shifts</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Acceptance Rate</p>
+                            <p class="text-2xl font-bold text-ready mt-1">87.3%</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Avg Door-to-Bed</p>
+                            <p class="text-2xl font-bold text-slate-800 mt-1">18 <span
+                                    class="text-sm text-slate-400 font-normal">min</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Divert Hours</p>
+                            <p class="text-2xl font-bold text-urgent mt-1">12.5 <span
+                                    class="text-sm text-slate-400 font-normal">hrs</span></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Avg ICU Occupancy</p>
+                            <p class="text-2xl font-bold text-slate-800 mt-1">82.4%</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 mb-4 text-sm">Accept vs. Decline Rate</h3>
+                            <div class="flex items-end gap-2 h-32 pt-4 border-b border-gray-100">
+                                <div class="flex-1 flex flex-col justify-end h-full">
+                                    <div class="bg-ready w-full rounded-t" style="height: 87%"></div>
+                                    <p class="text-xs text-center mt-1 text-slate-500">Mon</p>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-end h-full">
+                                    <div class="bg-ready w-full rounded-t" style="height: 90%"></div>
+                                    <div class="bg-critical w-full rounded-t" style="height: 10%"></div>
+                                    <p class="text-xs text-center mt-1 text-slate-500">Tue</p>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-end h-full">
+                                    <div class="bg-ready w-full rounded-t" style="height: 85%"></div>
+                                    <div class="bg-critical w-full rounded-t" style="height: 15%"></div>
+                                    <p class="text-xs text-center mt-1 text-slate-500">Wed</p>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-end h-full">
+                                    <div class="bg-ready w-full rounded-t" style="height: 88%"></div>
+                                    <div class="bg-critical w-full rounded-t" style="height: 12%"></div>
+                                    <p class="text-xs text-center mt-1 text-slate-500">Thu</p>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-end h-full">
+                                    <div class="bg-ready w-full rounded-t" style="height: 92%"></div>
+                                    <div class="bg-critical w-full rounded-t" style="height: 8%"></div>
+                                    <p class="text-xs text-center mt-1 text-slate-500">Fri</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="font-bold text-slate-800 mb-4 text-sm">ICU Occupancy Trend</h3>
+                            <div
+                                class="h-32 pt-4 flex items-center justify-center text-slate-400 border-b border-gray-100">
+                                [ Line Chart Placeholder - Data Visualization ]
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- NAVIGATION LOGIC ---
+        function login() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+        }
+
+        function logout() {
+            document.getElementById('app-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+        }
+
+        function switchView(event, viewId) {
+            if (event) event.preventDefault(); // Prevent page jump from href="#"
+
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+
+            // Show target view
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.classList.add('active');
+            } else {
+                console.error("View not found:", viewId);
+                return;
+            }
+
+            // Update sidebar active state
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            const activeLink = document.querySelector(`[data-view="${viewId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // Scroll main area back to top when switching views
+            document.querySelector('main').scrollTop = 0;
+        }
+
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- INTERACTIVE LOGIC: RESOURCE MANAGEMENT ---
+        function toggleBed(el) {
+            if (el.classList.contains('bg-gray-200')) {
+                el.classList.remove('bg-gray-200', 'text-slate-500');
+                el.classList.add('bg-green-200', 'text-green-700');
+                showToast(`Bed ${el.innerText} marked as Available.`);
+            } else if (el.classList.contains('bg-green-200')) {
+                el.classList.remove('bg-green-200', 'text-green-700');
+                el.classList.add('bg-red-200', 'text-red-700');
+                showToast(`Bed ${el.innerText} marked as Occupied.`);
+            } else {
+                el.classList.remove('bg-red-200', 'text-red-700');
+                el.classList.add('bg-gray-200', 'text-slate-500');
+                showToast(`Bed ${el.innerText} marked as Cleanup.`);
+            }
+        }
+
+        // --- INTERACTIVE LOGIC: ALERTS & TRIAGE ---
+        function acknowledgeAlert(buttonEl) {
+            const card = buttonEl.closest('.alert-card');
+            const content = card.querySelector('.alert-content');
+            const actions = card.querySelector('.alert-actions');
+
+            // Grey out the card
+            card.classList.remove('border-critical', 'border-urgent');
+            card.classList.add('border-gray-300', 'opacity-50');
+
+            // Strike through text
+            content.querySelector('p').classList.add('line-through', 'text-slate-400');
+
+            // Replace buttons
+            actions.innerHTML = '<span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Acknowledged</span>';
+
+            showToast('Alert acknowledged successfully.');
+        }
+    </script>
+</body>
+
+</html>
